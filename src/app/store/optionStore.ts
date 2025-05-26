@@ -56,10 +56,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionDetail', true);
       set({ error: null });
-      const response = await fetchWrapper.get(`${API_URL}/${id}`, {
-        method: 'GET',
-        requireAuth: true,
-      });
+      const response = await fetchWrapper.get(`${API_URL}/${id}`);
       set({ selectedOption: response });
     } catch (error) {
       set({ error: (error as Error).message });
@@ -72,11 +69,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionCreate', true);
       set({ error: null });
-      const response = await fetchWrapper.post(`${API_URL}`, {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify(data),
-      });
+      const response = await fetchWrapper.post(`${API_URL}`, data);
       const currentOptions = get().options;
       set({ options: [...currentOptions, response] });
       return response;
@@ -92,11 +85,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionUpdate', true);
       set({ error: null });
-      const response = await fetchWrapper.patch(`${API_URL}`, {
-        method: 'PATCH',
-        requireAuth: true,
-        body: JSON.stringify(data),
-      });
+      const response = await fetchWrapper.patch(`${API_URL}`, data);
       const currentOptions = get().options;
       set({
         options: currentOptions.map((item) =>
@@ -116,10 +105,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionDelete', true);
       set({ error: null });
-      await fetchWrapper.delete(`${API_URL}/${id}`, {
-        method: 'DELETE',
-        requireAuth: true,
-      });
+      await fetchWrapper.delete(`${API_URL}/${id}`);
       const currentOptions = get().options;
       set({
         options: currentOptions.filter((item) => item.id.toString() !== id),
