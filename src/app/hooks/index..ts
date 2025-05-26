@@ -1,3 +1,3 @@
 import { usePermissions } from './usePermissions';
-
-export { usePermissions };
+import { useOptions } from './useOptions';
+export { usePermissions, useOptions };

@@ -1,4 +1,4 @@
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store';
 
 export function usePermissions() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
@@ -11,9 +11,9 @@ export function usePermissions() {
     roleId: user?.users?.role_id,
     roleName: user?.roles?.name,
     permissions: user?.permission || [],
-    hasAnyPermission: (permissions: string[]) => 
+    hasAnyPermission: (permissions: string[]) =>
       permissions.some(permission => hasPermission(permission)),
-    hasAllPermissions: (permissions: string[]) => 
+    hasAllPermissions: (permissions: string[]) =>
       permissions.every(permission => hasPermission(permission)),
   };
 } 

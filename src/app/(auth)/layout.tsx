@@ -3,13 +3,17 @@
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export default function AuthLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return (
-    <ProtectedRoute>
-      {children}
-    </ProtectedRoute>
-  );
+    return (
+        <ProtectedRoute>
+
+            <div>
+                <button>login</button>
+            </div>
+            {children}
+        </ProtectedRoute>
+    );
 } 
