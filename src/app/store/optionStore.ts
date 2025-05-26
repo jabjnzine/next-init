@@ -40,7 +40,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('options', true);
       set({ error: null });
-      const response = await fetchWrapper<Option[]>(`${API_URL}`, {
+      const response = await fetchWrapper.get(`${API_URL}`, {
         method: 'GET',
         requireAuth: true,
       });
@@ -56,7 +56,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionDetail', true);
       set({ error: null });
-      const response = await fetchWrapper<Option>(`${API_URL}/${id}`, {
+      const response = await fetchWrapper.get(`${API_URL}/${id}`, {
         method: 'GET',
         requireAuth: true,
       });
@@ -72,7 +72,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionCreate', true);
       set({ error: null });
-      const response = await fetchWrapper<Option>(`${API_URL}`, {
+      const response = await fetchWrapper.post(`${API_URL}`, {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify(data),
@@ -92,7 +92,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionUpdate', true);
       set({ error: null });
-      const response = await fetchWrapper<Option>(`${API_URL}`, {
+      const response = await fetchWrapper.patch(`${API_URL}`, {
         method: 'PATCH',
         requireAuth: true,
         body: JSON.stringify(data),
@@ -116,7 +116,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('optionDelete', true);
       set({ error: null });
-      await fetchWrapper(`${API_URL}/${id}`, {
+      await fetchWrapper.delete(`${API_URL}/${id}`, {
         method: 'DELETE',
         requireAuth: true,
       });

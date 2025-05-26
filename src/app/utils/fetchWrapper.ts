@@ -4,8 +4,17 @@ import { useAuthStore } from '../store/authStore';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 const TENANT_ID = 'tester';
 
-interface FetchOptions extends RequestInit {
+interface RequestOptions extends RequestInit {
   requireAuth?: boolean;
+  credentials?: RequestCredentials;
+}
+
+interface FetchWrapper {
+  get: (url: string, body?: any, options?: RequestOptions) => Promise<any>;
+  post: (url: string, body?: any, options?: RequestOptions) => Promise<any>;
+  put: (url: string, body?: any, options?: RequestOptions) => Promise<any>;
+  delete: (url: string, body?: any, options?: RequestOptions) => Promise<any>;
+  patch: (url: string, body?: any, options?: RequestOptions) => Promise<any>;
 }
 
 async function refreshTokens(): Promise<AuthResponse | null> {
@@ -49,22 +58,35 @@ async function refreshTokens(): Promise<AuthResponse | null> {
   }
 }
 
-export async function fetchWrapper<T>(
-  endpoint: string,
-  options: FetchOptions = {}
-): Promise<T> {
-  const { requireAuth = false, headers = {}, ...restOptions } = options;
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+async function handleResponse(response: Response) {
+  const text = await response.text();
+  let data;
+  try {
+    data = text && JSON.parse(text);
+  } catch {
+    data = text;
+  }
 
-  // Add default headers
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
+  if (!response.ok) {
+    const error = (data && data.message) || response.statusText;
+    throw new Error(error);
+  }
+
+  return data;
+}
+
+async function createHeaders(url: string, options?: RequestOptions): Promise<Headers> {
+  const headers: Record<string, string> = {
     'x-tenant-id': TENANT_ID,
-    ...headers,
   };
 
+  // Add Content-Type if not FormData
+  if (!(options?.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   // Add auth header if required
-  if (requireAuth) {
+  if (options?.requireAuth) {
     let accessToken = useAuthStore.getState().accessToken;
 
     // If no access token and we have a refresh token, try to refresh
@@ -79,40 +101,76 @@ export async function fetchWrapper<T>(
       throw new Error('No access token available');
     }
 
-    Object.assign(defaultHeaders, {
-      Authorization: `Bearer ${accessToken}`,
-    });
+    headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch(url, {
-    ...restOptions,
-    headers: defaultHeaders,
-  });
+  return new Headers(headers);
+}
 
-  // Handle 401 errors
-  if (response.status === 401 && requireAuth) {
-    const newTokens = await refreshTokens();
-    if (newTokens) {
-      // Retry the request with new access token
-      Object.assign(defaultHeaders, {
-        Authorization: `Bearer ${newTokens.access_token}`,
-      });
-      const retryResponse = await fetch(url, {
-        ...restOptions,
-        headers: defaultHeaders,
-      });
-      
-      if (!retryResponse.ok) {
-        throw new Error(`HTTP error! status: ${retryResponse.status}`);
+function createRequest(method: string) {
+  return async (url: string, body?: any, options: RequestOptions = {}) => {
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+    const urlObj = new URL(fullUrl);
+
+    // Prepare request options
+    const requestOptions: RequestInit = {
+      method,
+      headers: await createHeaders(url, options),
+      credentials: options.credentials || 'same-origin',
+      ...options,
+    };
+
+    // Handle body based on request method and type
+    if (body instanceof FormData) {
+      requestOptions.body = body;
+    } else if (body) {
+      if (method === 'GET') {
+        // Add query params for GET requests
+        Object.entries(body).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            urlObj.searchParams.append(key, String(value));
+          }
+        });
+      } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        // Add body for other methods
+        requestOptions.body = JSON.stringify(body);
       }
-      return retryResponse.json();
     }
-    throw new Error('Authentication failed');
-  }
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+    try {
+      const response = await fetch(urlObj.toString(), requestOptions);
 
-  return response.json();
-} 
+      // Handle 401 errors
+      if (response.status === 401 && options.requireAuth) {
+        const newTokens = await refreshTokens();
+        if (newTokens) {
+          // Create new headers with the new token
+          requestOptions.headers = new Headers({
+            ...Object.fromEntries(requestOptions.headers as Headers),
+            'Authorization': `Bearer ${newTokens.access_token}`
+          });
+          const retryResponse = await fetch(urlObj.toString(), requestOptions);
+          
+          if (!retryResponse.ok) {
+            throw new Error(`HTTP error! status: ${retryResponse.status}`);
+          }
+          return await handleResponse(retryResponse);
+        }
+        throw new Error('Authentication failed');
+      }
+
+      return await handleResponse(response);
+    } catch (error) {
+      // You can add custom error handling here
+      throw error;
+    }
+  };
+}
+
+export const fetchWrapper: FetchWrapper = {
+  get: createRequest('GET'),
+  post: createRequest('POST'),
+  put: createRequest('PUT'),
+  delete: createRequest('DELETE'),
+  patch: createRequest('PATCH'),
+}; 

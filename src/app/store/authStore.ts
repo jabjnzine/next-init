@@ -27,10 +27,7 @@ const useAuthStore = create<State>()(
             login: async (credentials) => {
                 try {
                     console.log('Attempting login...');
-                    const response = await fetchWrapper<AuthResponse>('/auth/login', {
-                        method: 'POST',
-                        body: JSON.stringify(credentials),
-                    });
+                    const response = await fetchWrapper.post('/auth/login', credentials);
 
                     // First set the tokens
                     const tokens = {
@@ -56,9 +53,9 @@ const useAuthStore = create<State>()(
 
             fetchProfile: async () => {
                 const state = get();
-                console.log('Fetch profile called, auth state:', { 
+                console.log('Fetch profile called, auth state:', {
                     hasAccessToken: !!state.accessToken,
-                    isAuthenticated: state.isAuthenticated 
+                    isAuthenticated: state.isAuthenticated
                 });
 
                 try {
@@ -69,10 +66,7 @@ const useAuthStore = create<State>()(
                     }
 
                     console.log('Fetching profile...');
-                    const profile = await fetchWrapper<UserProfile>('/auth/profile', {
-                        method: 'GET',
-                        requireAuth: true,
-                    });
+                    const profile = await fetchWrapper.get('/auth/profile');
 
                     console.log('Profile fetched successfully');
                     set({ user: profile });
@@ -112,12 +106,12 @@ const useAuthStore = create<State>()(
                 isAuthenticated: state.isAuthenticated,
             }),
             onRehydrateStorage: () => (state) => {
-                console.log('Storage rehydrated:', { 
+                console.log('Storage rehydrated:', {
                     hasState: !!state,
                     hasAccessToken: state?.accessToken,
-                    isAuthenticated: state?.isAuthenticated 
+                    isAuthenticated: state?.isAuthenticated
                 });
-                
+
                 if (state && state.accessToken) {
                     console.log('Has token after rehydration, fetching profile...');
                     setTimeout(() => {
