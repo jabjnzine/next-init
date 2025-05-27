@@ -1,6 +1,7 @@
 'use client';
 
 import ProtectedRoute from '../components/ProtectedRoute';
+import { useAuthStore } from '../store';
 
 export default function AuthLayout({
     children,
@@ -11,7 +12,9 @@ export default function AuthLayout({
         <ProtectedRoute>
 
             <div>
-                <button>login</button>
+                <button onClick={() => {
+                    useAuthStore.getState().logout();
+                }}>logout</button>
             </div>
             {children}
         </ProtectedRoute>

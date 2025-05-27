@@ -23,13 +23,13 @@ const useAuthStore = create<State>()(
                     isAuthenticated: true,
                 });
             },
-
             login: async (credentials) => {
                 try {
                     console.log('Attempting login...');
-                    const response = await fetchWrapper.post('/auth/login', credentials);
+                    const response = await fetchWrapper.post('/auth/login', credentials, {
+                        skipAuth: true
+                    });
 
-                    // First set the tokens
                     const tokens = {
                         accessToken: response.access_token,
                         refreshToken: response.refresh_token,
@@ -59,7 +59,6 @@ const useAuthStore = create<State>()(
                 });
 
                 try {
-                    // Only fetch profile if we have an access token
                     if (!state.accessToken) {
                         console.log('No access token available, skipping profile fetch');
                         return;
@@ -72,7 +71,6 @@ const useAuthStore = create<State>()(
                     set({ user: profile });
                 } catch (error) {
                     console.error('Profile fetch failed:', error);
-                    // If profile fetch fails, log out the user
                     const store = get();
                     store.logout();
                     throw new Error('Failed to fetch user profile');

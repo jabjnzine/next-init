@@ -11,12 +11,12 @@ interface OptionStore {
   options: Option[];
   selectedOption: Option | null;
   error: string | null;
-  
+
   // Actions
   setError: (error: string | null) => void;
   setOptions: (options: Option[]) => void;
   setSelectedOption: (option: Option | null) => void;
-  
+
   // API calls
   fetchOptions: () => Promise<void>;
   fetchOptionById: (id: string) => Promise<void>;
@@ -40,10 +40,7 @@ export const useOptionStore = create<OptionStore>((set, get) => ({
     try {
       useLoadingStore.getState().setLoadingState('options', true);
       set({ error: null });
-      const response = await fetchWrapper.get(`${API_URL}`, {
-        method: 'GET',
-        requireAuth: true,
-      });
+      const response = await fetchWrapper.get(`${API_URL}`);
       set({ options: response });
     } catch (error) {
       set({ error: (error as Error).message });

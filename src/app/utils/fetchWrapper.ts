@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/a
 const TENANT_ID = 'tester';
 
 interface RequestOptions extends RequestInit {
-  requireAuth?: boolean;
+  skipAuth?: boolean;
   credentials?: RequestCredentials;
 }
 
@@ -37,20 +37,17 @@ async function refreshTokens(): Promise<AuthResponse | null> {
     }
 
     const data: AuthResponse = await response.json();
-    
-    // Convert snake_case to camelCase for store
     useAuthStore.getState().setTokens({
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
     });
 
-    // Fetch fresh profile data after successful token refresh
     try {
       await useAuthStore.getState().fetchProfile();
     } catch (error) {
       console.error('Failed to fetch profile after token refresh:', error);
     }
-    
+
     return data;
   } catch (error) {
     useAuthStore.getState().logout();
@@ -80,16 +77,13 @@ async function createHeaders(url: string, options?: RequestOptions): Promise<Hea
     'x-tenant-id': TENANT_ID,
   };
 
-  // Add Content-Type if not FormData
   if (!(options?.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
-  // Add auth header if required
-  if (options?.requireAuth) {
+  if (!options?.skipAuth) {
     let accessToken = useAuthStore.getState().accessToken;
 
-    // If no access token and we have a refresh token, try to refresh
     if (!accessToken && useAuthStore.getState().refreshToken) {
       const newTokens = await refreshTokens();
       if (newTokens) {
@@ -132,7 +126,6 @@ function createRequest(method: string) {
           }
         });
       } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-        // Add body for other methods
         requestOptions.body = JSON.stringify(body);
       }
     }
@@ -140,17 +133,15 @@ function createRequest(method: string) {
     try {
       const response = await fetch(urlObj.toString(), requestOptions);
 
-      // Handle 401 errors
-      if (response.status === 401 && options.requireAuth) {
+      if (response.status === 401 && !options?.skipAuth) {
         const newTokens = await refreshTokens();
         if (newTokens) {
-          // Create new headers with the new token
           requestOptions.headers = new Headers({
             ...Object.fromEntries(requestOptions.headers as Headers),
             'Authorization': `Bearer ${newTokens.access_token}`
           });
           const retryResponse = await fetch(urlObj.toString(), requestOptions);
-          
+
           if (!retryResponse.ok) {
             throw new Error(`HTTP error! status: ${retryResponse.status}`);
           }
@@ -161,7 +152,6 @@ function createRequest(method: string) {
 
       return await handleResponse(response);
     } catch (error) {
-      // You can add custom error handling here
       throw error;
     }
   };

@@ -9,9 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.0.1",
+    "@types/styled-components": "^5.1.34",
+    "antd": "^5.25.3",
     "next": "15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.56.4",
+    "styled-components": "^6.1.18",
+    "zod": "^3.25.30",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
